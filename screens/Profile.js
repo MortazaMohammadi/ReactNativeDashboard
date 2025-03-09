@@ -1,37 +1,72 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, Image, TextInput, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { Picker } from '@react-native-picker/picker';
 
 export default function Profile() {
-  const [profileImage, setProfileImage] = useState('/assets/profile.jpg');
+  const [profileImage, setProfileImage] = useState(null);
   const [selectedValue, setSelectedValue] = useState("java");
-  const [selectedFile, setSelectedFile] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [activeSection, setActiveSection] = useState(null);
 
   const pickProfileImage = async () => {
-    let result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [1, 1],
-      quality: 1,
-    });
+    try {
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 1,
+      });
 
-    if (!result.cancelled) {
-      setProfileImage(result.uri);
+      if (!result.canceled) {
+        setProfileImage(result.assets[0].uri);
+      }
+    } catch (error) {
+      console.log('Error picking image:', error);
     }
   };
 
   const pickFile = async () => {
-    let result = await DocumentPicker.getDocumentAsync({
-      type: '*/*',
-      copyToCacheDirectory: true,
-    });
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: '*/*',
+        copyToCacheDirectory: true,
+      });
 
-    if (result.type === 'success') {
-      setSelectedFile(result.name);
+      if (result.type === 'success') {
+        setSelectedFile({
+          name: result.name,
+          uri: result.uri,
+          mimeType: result.mimeType
+        });
+      }
+    } catch (error) {
+      console.log('Error picking document:', error);
     }
+  };
+
+  const handleFilePress = async () => {
+    if (selectedFile?.uri) {
+      try {
+        await Linking.openURL(selectedFile.uri);
+      } catch (error) {
+        console.log('Error opening file:', error);
+      }
+    }
+  };
+
+  const openFile = async (fileUri, fileType) => {
+    try {
+      await Linking.openURL(fileUri);
+    } catch (error) {
+      console.log('Error opening file:', error);
+    }
+  };
+
+  const toggleSection = (section) => {
+    setActiveSection(activeSection === section ? null : section);
   };
 
   return (
@@ -39,7 +74,7 @@ export default function Profile() {
       <View style={styles.profileHeader}>
         <View style={styles.profileImageContainer}>
           <Image
-            source={{ uri: profileImage }}
+            source={profileImage ? { uri: profileImage } : require('../assets/profile.jpg')}
             style={styles.profileImage}
           />
           <TouchableOpacity style={styles.cameraIcon} onPress={pickProfileImage}>
@@ -58,69 +93,95 @@ export default function Profile() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.section_title}>Professional Profile</Text>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} placeholder="Enter your email" />
-          <Text style={styles.label}>Phone</Text>
-          <TextInput style={styles.input} placeholder="Enter your Phone Number" />
-          <Text style={styles.label}>Address</Text>
-          <TextInput style={styles.input} placeholder="Enter your Address" />
-          <Text style={styles.label}>Number</Text>
-          <TextInput style={styles.input} placeholder="Enter a number" keyboardType="numeric" />
-          <Text style={styles.label}>Dropdown</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={selectedValue}
-              style={styles.picker}
-              onValueChange={(itemValue, itemIndex) => setSelectedValue(itemValue)}
-            >
-              <Picker.Item label="Java" value="java" />
-              <Picker.Item label="JavaScript" value="js" />
-            </Picker>
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('professionalProfile')}>
+          <Text style={styles.section_title}>Professional Profile</Text>
+          <Ionicons name={activeSection === 'professionalProfile' ? "remove-circle-outline" : "add-circle-outline"} size={24} color="#000" />
+        </TouchableOpacity>
+        {activeSection === 'professionalProfile' && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput style={styles.input} placeholder="Enter your email" />
+            <Text style={styles.label}>Phone</Text>
+            <TextInput style={styles.input} placeholder="Enter your Phone Number" />
+            <Text style={styles.label}>Address</Text>
+            <TextInput style={styles.input} placeholder="Enter your Address" />
+            <Text style={styles.label}>Number</Text>
+            <TextInput style={styles.input} placeholder="Enter a number" keyboardType="numeric" />
+            <Text style={styles.label}>Dropdown</Text>
+            <View style={styles.pickerContainer}>
+              <Picker
+                selectedValue={selectedValue}
+                style={styles.picker}
+                onValueChange={(itemValue, itemIndex) => setSelectedValue(itemValue)}
+              >
+                <Picker.Item label="Java" value="java" />
+                <Picker.Item label="JavaScript" value="js" />
+              </Picker>
+            </View>
+            <Text style={styles.label}>File Input</Text>
+            <TouchableOpacity style={styles.fileInput} onPress={pickFile}>
+              <Text style={styles.fileInputText}>
+                {selectedFile ? 'Change File' : 'Choose File'}
+              </Text>
+            </TouchableOpacity>
+            {selectedFile && (
+              <TouchableOpacity 
+                style={styles.selectedFileContainer}
+                onPress={handleFilePress}
+              >
+                <Ionicons 
+                  name={selectedFile.mimeType?.includes('image') ? 'image' : 'document-text'} 
+                  size={24} 
+                  color="#666"
+                />
+                <Text style={styles.selectedFileText}>{selectedFile.name}</Text>
+              </TouchableOpacity>
+            )}
+            <TouchableOpacity style={styles.submitButton}>
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
           </View>
-          <Text style={styles.label}>File Input</Text>
-          <TouchableOpacity style={styles.fileInput} onPress={pickFile}>
-            <Text style={styles.fileInputText}>{selectedFile ? selectedFile : "Choose File"}</Text>
-          </TouchableOpacity>
-          {selectedFile && <Text style={styles.selectedFileText}>{selectedFile}</Text>}
-          <TouchableOpacity style={styles.submitButton}>
-            <Text style={styles.submitButtonText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.section_title}>Professional Profile</Text>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} placeholder="Enter your email" />
-          <Text style={styles.label}>Phone</Text>
-          <TextInput style={styles.input} placeholder="Enter your Phone Number" />
-          <Text style={styles.label}>Address</Text>
-          <TextInput style={styles.input} placeholder="Enter your Address" />
-          <TouchableOpacity style={styles.submitButton}>
-            <Text style={styles.submitButtonText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('contactInfo')}>
+          <Text style={styles.section_title}>Contact Information</Text>
+          <Ionicons name={activeSection === 'contactInfo' ? "remove-circle-outline" : "add-circle-outline"} size={24} color="#000" />
+        </TouchableOpacity>
+        {activeSection === 'contactInfo' && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput style={styles.input} placeholder="Enter your email" />
+            <Text style={styles.label}>Phone</Text>
+            <TextInput style={styles.input} placeholder="Enter your Phone Number" />
+            <Text style={styles.label}>Address</Text>
+            <TextInput style={styles.input} placeholder="Enter your Address" />
+            <TouchableOpacity style={styles.submitButton}>
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.section_title}>Professional Profile</Text>
-
-        <View style={styles.formGroup}>
-          <Text style={styles.label}>Email</Text>
-          <TextInput style={styles.input} placeholder="Enter your email" />
-          <Text style={styles.label}>Phone</Text>
-          <TextInput style={styles.input} placeholder="Enter your Phone Number" />
-          <Text style={styles.label}>Address</Text>
-          <TextInput style={styles.input} placeholder="Enter your Address" />
-          <TouchableOpacity style={styles.submitButton}>
-            <Text style={styles.submitButtonText}>Submit</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.sectionHeader} onPress={() => toggleSection('additionalInfo')}>
+          <Text style={styles.section_title}>Additional Information</Text>
+          <Ionicons name={activeSection === 'additionalInfo' ? "remove-circle-outline" : "add-circle-outline"} size={24} color="#000" />
+        </TouchableOpacity>
+        {activeSection === 'additionalInfo' && (
+          <View style={styles.formGroup}>
+            <Text style={styles.label}>Email</Text>
+            <TextInput style={styles.input} placeholder="Enter your email" />
+            <Text style={styles.label}>Phone</Text>
+            <TextInput style={styles.input} placeholder="Enter your Phone Number" />
+            <Text style={styles.label}>Address</Text>
+            <TextInput style={styles.input} placeholder="Enter your Address" />
+            <TouchableOpacity style={styles.submitButton}>
+              <Text style={styles.submitButtonText}>Submit</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </View>
 
     </ScrollView>
@@ -176,31 +237,36 @@ const styles = StyleSheet.create({
   },
   section: {
     backgroundColor: '#fff',
-    padding: 20,
-    paddingBottom: 50,
-    borderRadius: 10,
-    marginBottom: 20,
-    position: 'relative',
-    borderTopWidth: 1,
-    borderBottomWidth: 1,
-    borderColor: '#d3d3d3',
-    shadowOffset: { width: 0, height: 5 },
+    padding: 15,
+    paddingBottom: 20,
+    borderRadius: 12,
+    marginHorizontal: 10,
+    marginVertical: 8,
+    borderWidth: 1,
+    borderColor: '#f0f0f0',
     shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 5,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
   section_title:{
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 10,
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#444',
   },
   formGroup: {
-    marginBottom: 0,
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 10,
-    borderRadius: 0,
+    marginTop: 10,
+    paddingHorizontal: 5,
+    borderTopWidth: 1,
+    borderTopColor: '#f5f5f5',
+    paddingTop: 15,
   },
   label: {
     fontSize: 16,
@@ -210,12 +276,13 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
   input: {
-    height: 50,
-    borderColor: '#ccc',
+    height: 45,
+    borderColor: '#e0e0e0',
     borderWidth: 1,
-    borderRadius: 5,
-    marginBottom: 10,
-    paddingHorizontal: 10,
+    borderRadius: 8,
+    marginBottom: 15,
+    paddingHorizontal: 12,
+    backgroundColor: '#fafafa',
   },
   pickerContainer: {
     height: 50,
@@ -241,23 +308,36 @@ const styles = StyleSheet.create({
   fileInputText: {
     color: '#666',
   },
-  selectedFileText: {
+  selectedFileContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    marginBottom: 15,
     marginTop: 5,
-    color: '#666',
+    borderWidth: 1,
+    borderColor: '#ddd',
+  },
+  selectedFileText: {
+    marginLeft: 10,
+    color: '#444',
+    fontSize: 14,
+    flex: 1,
+    textDecorationLine: 'underline',
   },
   submitButton: {
-    position: 'relative',
-    width: '40%',
-    backgroundColor: '',
-    padding: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 5,
     backgroundColor: '#b39dd4',
-    marginTop: 10,
-    marginTop:5,
-    alignItems: 'center',
-    borderRadius: 5,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    alignSelf: 'center',
+    minWidth: 120,
+    shadowColor: '#b39dd4',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 2,
   },
   submitButtonText: {
     color: '#000',

@@ -11,68 +11,45 @@ import Listings from '../screens/Listings';
 
 const Drawer = createDrawerNavigator();
 
-const Header = () => {
+export default function App() {
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity style={styles.menuButton}>
-          <Ionicons name="menu" size={24} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.title}>Dashboard</Text>
-        <View style={styles.rightContainer}>
-          <TouchableOpacity style={styles.iconButton}>
-            <Ionicons name="settings" size={24} color="#fff" />
-          </TouchableOpacity>
-          <Image
-            source={{ uri: 'https://example.com/profile.jpg' }}
-            style={styles.profileImage}
-          />
-        </View>
+    <NavigationContainer>
+      <View style={styles.container}>
+        
+        <Drawer.Navigator initialRouteName="Dashboard">
+          <Drawer.Screen name="Dashboard" component={Dashboard} />
+          <Drawer.Screen name="Profile" component={Profile} />
+          <Drawer.Screen name="AvailableJobs" component={AvailableJobs} />
+          <Drawer.Screen name="CurrentJob" component={CurrentJob} />
+          <Drawer.Screen name="AddJob" component={AddJob} />
+          <Drawer.Screen name="Listings" component={Listings} />
+        </Drawer.Navigator>
       </View>
-      <Drawer.Navigator initialRouteName="Dashboard">
-        <Drawer.Screen name="Dashboard" component={Dashboard} />
-        <Drawer.Screen name="Profile" component={Profile} />
-        <Drawer.Screen name="AvailableJobs" component={AvailableJobs} />
-        <Drawer.Screen name="CurrentJob" component={CurrentJob} />
-        <Drawer.Screen name="AddJob" component={AddJob} />
-        <Drawer.Screen name="Listings" component={Listings} />
-      </Drawer.Navigator>
-    </View>
+    </NavigationContainer>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: '#f0f0f0',
   },
-  header: {
-    height: 60,
-    backgroundColor: '#007bff',
+  content: {
+    flex: 1,
     flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
   },
-  menuButton: {
-    padding: 10,
+  body: {
+    flexGrow: 1,
+    padding: 20,
   },
   title: {
-    color: '#fff',
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: 'bold',
+    marginBottom: 10,
   },
-  rightContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  iconButton: {
-    marginRight: 10,
-  },
-  profileImage: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  subtitle: {
+    fontSize: 18,
+    color: '#666',
+    marginBottom: 20,
   },
 });
-
-export default Header;
